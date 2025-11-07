@@ -44,6 +44,10 @@ type histogramWithLabels struct {
 	labelNames   labelNames
 }
 
+var (
+	durationBuckets = []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 20, 50, 100, 250, 500, 1000, 2500, 5000, 10000}
+)
+
 func NewPrometheusAdapter(registry *prometheus.Registry, logger logrus.FieldLogger, ns, sub string) *PrometheusAdapter {
 	return &PrometheusAdapter{
 		Subsystem: sub,
@@ -157,7 +161,7 @@ func (a *PrometheusAdapter) handleRate(sample *metrics.Sample) {
 }
 
 func (a *PrometheusAdapter) handleTrend(sample *metrics.Sample) {
-	if histogram := a.getHistogram(sample.Metric.Name, "k6 trend", []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 50, 100, 250, 500, 1000, 2500, 5000, 10000}, sample.Tags); histogram != nil {
+	if histogram := a.getHistogram(sample.Metric.Name, "k6 trend", durationBuckets, sample.Tags); histogram != nil {
 		labelValues := a.tagsToLabelValues(histogram.labelNames, sample.Tags)
 
 		metric, err := histogram.histogramVec.GetMetricWithLabelValues(labelValues...)
@@ -345,12 +349,12 @@ var builtinMetrics = map[string]string{
 	"checks":             "The rate of successful checks",
 
 	"http_reqs":                "How many HTTP requests has k6 generated, in total",
-	"http_req_blocked":         "Time spent blocked  before initiating the request",
-	"http_req_connecting":      "Time spent establishing TCP connection",
-	"http_req_tls_handshaking": "Time spent handshaking TLS session",
-	"http_req_sending":         "Time spent sending data",
-	"http_req_waiting":         "Time spent waiting for response",
-	"http_req_receiving":       "Time spent receiving response data",
-	"http_req_duration":        "Total time for the request",
+	"http_req_blocked":         "Time spent in milliseconds blocked before initiating the request",
+	"http_req_connecting":      "Time spent in milliseconds establishing TCP connection",
+	"http_req_tls_handshaking": "Time spent in milliseconds handshaking TLS session",
+	"http_req_sending":         "Time spent in milliseconds sending data",
+	"http_req_waiting":         "Time spent in milliseconds waiting for response",
+	"http_req_receiving":       "Time spent in milliseconds receiving response data",
+	"http_req_duration":        "Total time in milliseconds spent sending, waiting for response, and receiving the response",
 	"http_req_failed":          "The rate of failed requests",
 }
