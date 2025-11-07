@@ -157,7 +157,7 @@ func (a *PrometheusAdapter) handleRate(sample *metrics.Sample) {
 }
 
 func (a *PrometheusAdapter) handleTrend(sample *metrics.Sample) {
-	if histogram := a.getHistogram(sample.Metric.Name, "k6 trend", prometheus.DefBuckets, sample.Tags); histogram != nil {
+	if histogram := a.getHistogram(sample.Metric.Name, "k6 trend", []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 50, 100, 250, 500, 1000, 2500, 5000, 10000}, sample.Tags); histogram != nil {
 		labelValues := a.tagsToLabelValues(histogram.labelNames, sample.Tags)
 
 		metric, err := histogram.histogramVec.GetMetricWithLabelValues(labelValues...)
