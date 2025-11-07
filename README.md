@@ -8,7 +8,7 @@ Built for [k6](https://go.k6.io/k6) using [xk6](https://github.com/grafana/xk6).
 
 ## Download
 
-You can download pre-built k6 binaries from [Releases](https://github.com/szkiba/xk6-prometheus/releases/) page. Check [Packages](https://github.com/szkiba/xk6-prometheus/pkgs/container/xk6-prometheus) page for pre-built k6 Docker images.
+You can download pre-built k6 binaries from [Releases](https://github.com/ahinh43/xk6-prometheus/releases/) page. Check [Packages](https://github.com/ahinh43/xk6-prometheus/pkgs/container/xk6-prometheus) page for pre-built k6 Docker images.
 
 ## Build
 
@@ -32,7 +32,7 @@ You must have the latest Go version installed to build the k6 binary. The latest
 2. Build the binary:
 
    ```shell
-   xk6 build --with github.com/szkiba/xk6-prometheus@latest
+   xk6 build --with github.com/ahinh43/xk6-prometheus@latest
    ```
 
 > **Note**
@@ -44,7 +44,7 @@ If you want to add a feature or make a fix, clone the project and build it using
 
 ```bash
 git clone git@github.com:szkiba/xk6-prometheus.git && cd xk6-prometheus
-xk6 build --with github.com/szkiba/xk6-prometheus@latest=.
+xk6 build --with github.com/ahinh43/xk6-prometheus@latest=.
 ```
 
 ## Docker

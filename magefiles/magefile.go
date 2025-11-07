@@ -37,7 +37,7 @@ func Test() error {
 }
 
 func Build() error {
-	return shellcmd.Command(`xk6 build --with github.com/szkiba/xk6-prometheus=.`).Run()
+	return shellcmd.Command(`xk6 build --with github.com/ahinh43/xk6-prometheus=.`).Run()
 }
 
 func Coverage() error {

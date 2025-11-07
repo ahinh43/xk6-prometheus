@@ -1,4 +1,4 @@
-module github.com/szkiba/xk6-prometheus
+module github.com/ahinh43/xk6-prometheus
 
 go 1.20
 
