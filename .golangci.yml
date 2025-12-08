@@ -1,37 +1,53 @@
-# SPDX-FileCopyrightText: 2021 - 2023 Iván Szkiba
-#
-# SPDX-License-Identifier: MIT
-
+version: "2"
 linters:
-  presets:
-    - bugs
-    - style
-    - unused
-    - complexity
-    - format
-    - performance
-  enable:
-    - exportloopref
+  default: all
   disable:
-    - testpackage
-    - nolintlint
-    - gochecknoglobals
+    # k6 extensions must be registered from the init() function.
     - gochecknoinits
-    - lll
-    - maligned
-    - interfacer
-    - scopelint
-    - wrapcheck
-# deprecated
-    - deadcode
-    - nosnakecase
-    - exhaustivestruct
-    - ifshort
-    - structcheck
-    - varcheck
-    - golint
-# generics
-    - rowserrcheck
-    - sqlclosecheck
-    - wastedassign
 
+    # The constructor of k6 extensions must return an interface.
+    - ireturn
+
+    # In many cases (e.g. options) it is normal usage not to specify all structure fields.
+    - exhaustruct
+
+    # Many go standard library API functions have typical parameter names shorter than 3 characters.
+    # It is better to use the usual parameter names than to create one that conforms to the rule.
+    - varnamelen
+
+    # Except for general-purpose public APIs,
+    # wrapping errors is more inconvenient and error prone than useful.
+    - wrapcheck
+
+    # The k6 extension API is not a general-purpose API.
+    - testpackage
+
+    # Would require rewriting a lot of code.
+    - noinlineerr
+
+    # Deprecated
+    - wsl
+  exclusions:
+    paths:
+      - scripts
+  settings:
+    depguard:
+      rules:
+        prevent_accidental_imports:
+          allow:
+            - $gostd
+            - github.com/stretchr/testify/require
+            - github.com/gorilla/schema
+            - github.com/prometheus/client_golang
+            - github.com/sirupsen/logrus
+            - go.k6.io/k6
+            - github.com/szkiba/xk6-prometheus
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
