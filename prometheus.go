@@ -1,10 +1,8 @@
-// SPDX-FileCopyrightText: 2021 - 2023 Iván Szkiba
-//
-// SPDX-License-Identifier: MIT
-
+// Package prometheus implements a Prometheus output for k6.
 package prometheus
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -32,6 +30,7 @@ type options struct {
 	Namespace string
 }
 
+// Output is the Prometheus output implementation.
 type Output struct {
 	*internal.PrometheusAdapter
 
@@ -40,13 +39,14 @@ type Output struct {
 	logger logrus.FieldLogger
 }
 
-func New(params output.Params) (output.Output, error) { // nolint:ireturn
+// New creates a new Prometheus output instance.
+func New(params output.Params) (output.Output, error) { //nolint:ireturn
 	registry, ok := prometheus.DefaultRegisterer.(*prometheus.Registry)
 	if !ok {
 		registry = prometheus.NewRegistry()
 	}
 
-	out := &Output{ // nolint:exhaustruct
+	out := &Output{
 		PrometheusAdapter: internal.NewPrometheusAdapter(registry, params.Logger, "", ""),
 		arg:               params.ConfigArgument,
 		logger:            params.Logger,
@@ -55,8 +55,41 @@ func New(params output.Params) (output.Output, error) { // nolint:ireturn
 	return out, nil
 }
 
+// Description implements output.Output.
 func (o *Output) Description() string {
 	return fmt.Sprintf("prometheus (%s)", o.addr)
+}
+
+// Start implements output.Output.
+func (o *Output) Start() error {
+	opts, err := getopts(o.arg)
+	if err != nil {
+		return err
+	}
+
+	o.Namespace = opts.Namespace
+	o.Subsystem = opts.Subsystem
+	o.addr = fmt.Sprintf("%s:%d", opts.Host, opts.Port)
+
+	listener, err := new(net.ListenConfig).Listen(context.TODO(), "tcp", o.addr)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		server := &http.Server{Handler: o.Handler(), ReadHeaderTimeout: time.Second} //nolint:exhaustruct
+
+		if err := server.Serve(listener); err != nil {
+			o.logger.Error(err)
+		}
+	}()
+
+	return nil
+}
+
+// Stop implements output.Output.
+func (o *Output) Stop() error {
+	return nil
 }
 
 func getopts(query string) (*options, error) {
@@ -83,34 +116,4 @@ func getopts(query string) (*options, error) {
 	}
 
 	return opts, nil
-}
-
-func (o *Output) Start() error {
-	opts, err := getopts(o.arg)
-	if err != nil {
-		return err
-	}
-
-	o.Namespace = opts.Namespace
-	o.Subsystem = opts.Subsystem
-	o.addr = fmt.Sprintf("%s:%d", opts.Host, opts.Port)
-
-	listener, err := net.Listen("tcp", o.addr)
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		server := &http.Server{Handler: o.PrometheusAdapter.Handler(), ReadHeaderTimeout: time.Second} //nolint:exhaustruct
-
-		if err := server.Serve(listener); err != nil {
-			o.logger.Error(err)
-		}
-	}()
-
-	return nil
-}
-
-func (o *Output) Stop() error {
-	return nil
 }
