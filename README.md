@@ -1,138 +1,201 @@
 # xk6-prometheus
 
-A k6 extension implements Prometheus HTTP exporter as k6 output extension.
+A [k6](https://go.k6.io/k6) extension that implements a Prometheus HTTP exporter for k6 metrics.
 
-Using **xk6-prometheus** output extension you can collect metrics from long running k6 process with Prometheus. All custom k6 metrics ([Counter](https://k6.io/docs/javascript-api/k6-metrics/counter/),[Gauge](https://k6.io/docs/javascript-api/k6-metrics/gauge/),[Rate](https://k6.io/docs/javascript-api/k6-metrics/rate/),[Trend](https://k6.io/docs/javascript-api/k6-metrics/trend/)) and [build-in metrics](https://k6.io/docs/using-k6/metrics/#built-in-metrics) will be accessible as appropiate Prometheus metrics on a given HTTP port in Prometheus importable text format. 
+## Features
 
-Built for [k6](https://go.k6.io/k6) using [xk6](https://github.com/grafana/xk6).
+- **Real-time Metrics Export** - Expose k6 metrics via HTTP endpoint during test execution
+- **Long-Running Tests** - Perfect for continuous load testing and monitoring with Prometheus
+- **All Metric Types** - Supports all k6 metric types: Counter, Gauge, Rate, and Trend
+- **Full Label Support** - Preserves all k6 metric tags as Prometheus labels
+- **Configurable** - Customizable port, host, namespace, and subsystem
+- **Built-in Metrics** - Automatically exports all [k6 built-in metrics](https://k6.io/docs/using-k6/metrics/#built-in-metrics)
+- **Custom Metrics** - Works seamlessly with custom k6 metrics ([Counter](https://k6.io/docs/javascript-api/k6-metrics/counter/), [Gauge](https://k6.io/docs/javascript-api/k6-metrics/gauge/), [Rate](https://k6.io/docs/javascript-api/k6-metrics/rate/), [Trend](https://k6.io/docs/javascript-api/k6-metrics/trend/))
 
-## Download
+## Table of Contents
 
-You can download pre-built k6 binaries from [Releases](https://github.com/szkiba/xk6-prometheus/releases/) page. Check [Packages](https://github.com/szkiba/xk6-prometheus/pkgs/container/xk6-prometheus) page for pre-built k6 Docker images.
+- [Installation](#installation)
+  - [Pre-built Binaries](#pre-built-binaries)
+  - [Build from Source](#build-from-source)
+- [Usage](#usage)
+  - [Quick Start](#quick-start)
+  - [Configuration Parameters](#configuration-parameters)
+  - [Examples](#examples)
+- [Metric Format](#metric-format)
+- [Prometheus Configuration](#prometheus-configuration)
+- [Use Cases](#use-cases)
+- [Contributing](#contributing)
+- [License](#license)
 
-## Build
+## Installation
+
+### Pre-built Binaries
+
+Download pre-built k6 binaries with xk6-prometheus from the [Releases](https://github.com/szkiba/xk6-prometheus/releases/) page.
+
+### Build from Source
 
 You can build the k6 binary on various platforms, each with its requirements. The following shows how to build k6 binary with this extension on GNU/Linux distributions.
 
-### Prerequisites
+#### Prerequisites
 
-You must have the latest Go version installed to build the k6 binary. The latest version should match [k6](https://github.com/grafana/k6#build-from-source) and [xk6](https://github.com/grafana/xk6#requirements).
+- **Go** - Latest version (matching [k6](https://github.com/grafana/k6#build-from-source) and [xk6](https://github.com/grafana/xk6#requirements) requirements)
+- **Git** - For cloning the repository
+- **xk6** - Extension builder for k6
 
-- [Git](https://git-scm.com/) for cloning the project
-- [xk6](https://github.com/grafana/xk6) for building k6 binary with extensions
+#### Install Latest Release
 
-### Install and build the latest tagged version
+1. Install xk6:
 
-1. Install `xk6`:
-
-   ```shell
+   ```bash
    go install go.k6.io/xk6/cmd/xk6@latest
    ```
 
-2. Build the binary:
+2. Build k6 with xk6-prometheus:
 
-   ```shell
+   ```bash
    xk6 build --with github.com/szkiba/xk6-prometheus@latest
    ```
 
-> **Note**
-> You can always use the latest version of k6 to build the extension, but the earliest version of k6 that supports extensions via xk6 is v0.43.0. The xk6 is constantly evolving, so some APIs may not be backward compatible.
+#### Development Build
 
-### Build for development
-
-If you want to add a feature or make a fix, clone the project and build it using the following commands. The xk6 will force the build to use the local clone instead of fetching the latest version from the repository. This process enables you to update the code and test it locally.
+For local development and testing:
 
 ```bash
-git clone git@github.com:szkiba/xk6-prometheus.git && cd xk6-prometheus
+git clone https://github.com/szkiba/xk6-prometheus.git
+cd xk6-prometheus
 xk6 build --with github.com/szkiba/xk6-prometheus@latest=.
 ```
 
-## Docker
-
-You can also use pre-built k6 image within a Docker container. In order to do that, you will need to execute something like the following:
-
-**Linux**
-
-```plain
-docker run -v $(pwd):/scripts -it --rm ghcr.io/szkiba/xk6-prometheus:latest run -d 1m --out=prometheus /scripts/script.js
-```
-
-**Windows**
-
-```plain
-docker run -v %cd%:/scripts -it --rm ghcr.io/szkiba/xk6-prometheus:latest run -d 1m --out=prometheus /scripts/script.js
-```
+This forces xk6 to use your local clone instead of fetching from the repository.
 
 ## Usage
 
-### With defaults
+### Quick Start
 
-Without parameters the Prometheus HTTP exporter will accessible on port `5656`.
+Run k6 with the Prometheus output extension. By default, metrics are exposed on `http://localhost:5656/metrics`.
 
-```plain
-$ ./k6 run -d 1m --out prometheus script.js
-
-          /\      |‾‾| /‾‾/   /‾‾/   
-     /\  /  \     |  |/  /   /  /    
-    /  \/    \    |     (   /   ‾‾\  
-   /          \   |  |\  \ |  (‾)  | 
-  / __________ \  |__| \__\ \_____/ .io
-
-  execution: local
-     script: script.js
-     output: prometheus (:5656)
-
-  scenarios: (100.00%) 1 scenario, 1 max VUs, 1m30s max duration (incl. graceful stop):
-           * default: 1 looping VUs for 1m0s (gracefulStop: 30s)
-
-
-running (1m01.0s), 0/1 VUs, 54 complete and 0 interrupted iterations
-default ✓ [======================================] 1 VUs  1m0s
-
-     data_received..................: 611 kB 10 kB/s
-     data_sent......................: 4.1 kB 67 B/s
-     http_req_blocked...............: avg=3.37ms   min=2.86µs   med=3.82µs   max=181.96ms p(90)=11.15µs  p(95)=13.52µs 
-     http_req_connecting............: avg=2.19ms   min=0s       med=0s       max=118.34ms p(90)=0s       p(95)=0s      
-     http_req_duration..............: avg=125.14ms min=118.99ms med=120.68ms max=237.66ms p(90)=121.45ms p(95)=124.07ms
-       { expected_response:true }...: avg=125.14ms min=118.99ms med=120.68ms max=237.66ms p(90)=121.45ms p(95)=124.07ms
-     http_req_failed................: 0.00%  ✓ 0   ✗ 54 
-     http_req_receiving.............: avg=5.1ms    min=85.32µs  med=792.2µs  max=118.29ms p(90)=860.41µs p(95)=903.71µs
-     http_req_sending...............: avg=20.68µs  min=12.53µs  med=16.69µs  max=75.97µs  p(90)=29.39µs  p(95)=37.87µs 
-     http_req_tls_handshaking.......: avg=0s       min=0s       med=0s       max=0s       p(90)=0s       p(95)=0s      
-     http_req_waiting...............: avg=120.01ms min=118.17ms med=119.78ms max=127.48ms p(90)=120.6ms  p(95)=120.71ms
-     http_reqs......................: 54     0.885451/s
-     iteration_duration.............: avg=1.12s    min=1.11s    med=1.12s    max=1.3s     p(90)=1.12s    p(95)=1.16s   
-     iterations.....................: 54     0.885451/s
-     vus............................: 1      min=1 max=1
-     vus_max........................: 1      min=1 max=1
+```bash
+./k6 run -o prometheus script.js
 ```
 
-### Parameters
+Access the metrics endpoint:
 
-The output extension accept parameters in a standard query string format:
-
-```
-k6 run --out 'prometheus=param1=value1&param2=value2&param3=value3'
+```bash
+curl http://localhost:5656/metrics
 ```
 
-> Note apostrophe (`'`) characters around the `--out` parameter! You should use it for escape `&` characters from shell (or use backslash before `&` characters).
+### Configuration Parameters
 
-The following paremeters are recognized:
+Configure the exporter using query string parameters:
 
-parameter | description
-----------|------------
-namespace | [Prometheus namespace](https://prometheus.io/docs/practices/naming/) for exported metrics (default: "", empty)
-subsystem | [Prometheus subsystem](https://prometheus.io/docs/practices/naming/) for exported metrics (default: "", empty)
-host      | Hostname or IP address for HTTP endpoint (default: "", empty, listen on all interfaces)
-port      | TCP port for HTTP endoint (default: 5656)
+```bash
+k6 run -o 'prometheus=param1=value1&param2=value2' script.js
+```
 
-*It is recommended to use `k6` as either `namespace` or `subsystem` to prefix exported metrics names with `k6_` string.*
+> [!TIP]
+> Use quotes around the `--out` parameter to escape `&` characters from the shell.
 
-## Sample HTTP response
+| Parameter   | Description                                                                                   | Default        |
+|-------------|-----------------------------------------------------------------------------------------------|----------------|
+| `namespace` | [Prometheus namespace](https://prometheus.io/docs/practices/naming/) for exported metrics     | `""` (empty)   |
+| `subsystem` | [Prometheus subsystem](https://prometheus.io/docs/practices/naming/) for exported metrics     | `""` (empty)   |
+| `host`      | Hostname or IP address for HTTP endpoint (empty = listen on all interfaces)                   | `""` (all)     |
+| `port`      | TCP port for HTTP endpoint                                                                    | `5656`         |
 
-Here is the relevant part of the metrics HTTP response:
+> [!TIP]
+> It's recommended to use `k6` as either `namespace` or `subsystem` to prefix metrics with `k6_`.
 
-```plain
+### Examples
+
+#### Basic Usage
+
+Default configuration (port 5656, all interfaces):
+
+```bash
+./k6 run -o prometheus script.js
+```
+
+#### Custom Port
+
+Run on a specific port:
+
+```bash
+./k6 run -o 'prometheus=port=9090' script.js
+```
+
+#### With Namespace
+
+Add `k6_` prefix to all metrics:
+
+```bash
+./k6 run -o 'prometheus=namespace=k6' script.js
+```
+
+#### Custom Host and Port
+
+Listen only on localhost with custom port:
+
+```bash
+./k6 run -o 'prometheus=host=127.0.0.1&port=8080' script.js
+```
+
+#### Long-Running Test
+
+Run a continuous load test for monitoring:
+
+```bash
+./k6 run -o prometheus --duration 24h --vus 10 script.js
+```
+
+### Sample Test Script
+
+```javascript
+import http from "k6/http";
+import { sleep } from "k6";
+import { Counter, Trend } from "k6/metrics";
+
+// Custom metrics
+let myCounter = new Counter("my_counter");
+let myTrend = new Trend("my_trend");
+
+export default function () {
+  const response = http.get("https://test.k6.io");
+  
+  myCounter.add(1);
+  myTrend.add(response.timings.duration);
+  
+  sleep(1);
+}
+```
+
+## Metric Format
+
+The extension exports k6 metrics in Prometheus text format. Metric types are mapped as follows:
+
+| k6 Metric Type | Prometheus Type | Description                                    |
+|----------------|-----------------|------------------------------------------------|
+| Counter        | Counter         | Cumulative metric that only increases          |
+| Gauge          | Gauge           | Metric that can go up or down                  |
+| Rate           | Histogram       | Ratio of non-zero values (exported as 0 or 1)  |
+| Trend          | Summary         | Statistical aggregations with quantiles        |
+
+### Metric Labels
+
+All k6 metric tags are preserved as Prometheus labels:
+- `scenario` - Test scenario name
+- `group` - Test group name
+- `method` - HTTP method (for HTTP metrics)
+- `status` - HTTP status code (for HTTP metrics)
+- `url` - Request URL (for HTTP metrics)
+- `name` - Metric name
+- Custom tags from your test script
+
+## Sample HTTP Response
+
+Example metrics output with `namespace=k6`:
+
+```prometheus
 # HELP k6_data_received The amount of received data
 # TYPE k6_data_received counter
 k6_data_received{group="",scenario="default",tls_version=""} 538700
@@ -300,3 +363,77 @@ k6_vus{tls_version=""} 1
 # TYPE k6_vus_max gauge
 k6_vus_max{tls_version=""} 1
 ```
+
+## Prometheus Configuration
+
+Add the k6 endpoint as a scrape target in your `prometheus.yml`:
+
+```yaml
+scrape_configs:
+  - job_name: 'k6'
+    static_configs:
+      - targets: ['localhost:5656']
+    scrape_interval: 5s  # Adjust based on your needs
+```
+
+For Kubernetes deployments, use service discovery:
+
+```yaml
+scrape_configs:
+  - job_name: 'k6'
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: keep
+        regex: k6
+      - source_labels: [__meta_kubernetes_pod_container_port_number]
+        action: keep
+        regex: "5656"
+```
+
+## Use Cases
+
+### Continuous Load Testing
+
+Run k6 continuously and monitor performance over time with Prometheus and Grafana:
+
+```bash
+./k6 run -o prometheus --duration 0 --vus 50 script.js
+```
+
+### Integration Testing
+
+Monitor application performance during integration tests:
+
+```bash
+./k6 run -o prometheus --iterations 1000 --vus 10 integration-test.js
+```
+
+### Capacity Planning
+
+Gradually increase load and observe system behavior:
+
+```bash
+./k6 run -o prometheus --stages 10m:100,20m:200,10m:300 script.js
+```
+
+### Multi-Service Monitoring
+
+Run multiple k6 instances with different ports to test different services:
+
+```bash
+# Service A
+./k6 run -o 'prometheus=port=5656' service-a-test.js &
+
+# Service B  
+./k6 run -o 'prometheus=port=5657' service-b-test.js &
+```
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
