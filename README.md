@@ -179,7 +179,7 @@ The extension exports k6 metrics in Prometheus text format. Metric types are map
 | Counter        | Counter         | Cumulative metric that only increases          |
 | Gauge          | Gauge           | Metric that can go up or down                  |
 | Rate           | Histogram       | Ratio of non-zero values (exported as 0 or 1)  |
-| Trend          | Summary         | Statistical aggregations with quantiles        |
+| Trend          | Summary (or Histogram)         | Statistical aggregations with quantiles        |
 
 ### Metric Labels
 
