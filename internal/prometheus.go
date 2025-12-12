@@ -13,11 +13,11 @@ import (
 
 // PrometheusAdapter is an adapter for Prometheus metrics.
 type PrometheusAdapter struct {
-	Subsystem string
-	Namespace string
-	logger    logrus.FieldLogger
-	metrics   map[string]any
-	registry  *prometheus.Registry
+	Subsystem           string
+	Namespace           string
+	logger              logrus.FieldLogger
+	metrics             map[string]any
+	registry            *prometheus.Registry
 	UseHistogramForTime bool
 }
 
@@ -150,29 +150,11 @@ func (a *PrometheusAdapter) handleGauge(sample *metrics.Sample) {
 }
 
 func (a *PrometheusAdapter) handleRate(sample *metrics.Sample) {
-	if histogram := a.getHistogram(sample.Metric.Name, "k6 rate", []float64{0}, sample.Tags); histogram != nil {
-		labelValues := a.tagsToLabelValues(histogram.labelNames, sample.Tags)
-
-		metric, err := histogram.histogramVec.GetMetricWithLabelValues(labelValues...)
-		if err != nil {
-			a.logger.Error(err)
-		} else {
-			metric.Observe(sample.Value)
-		}
-	}
+	a.handleHistogram(sample, []float64{0}, "k6 rate")
 }
 
 func (a *PrometheusAdapter) handleTrendAsHistogram(sample *metrics.Sample) {
-	if histogram := a.getHistogram(sample.Metric.Name, "k6 trend", durationBuckets, sample.Tags); histogram != nil {
-		labelValues := a.tagsToLabelValues(histogram.labelNames, sample.Tags)
-
-		metric, err := histogram.histogramVec.GetMetricWithLabelValues(labelValues...)
-		if err != nil {
-			a.logger.Error(err)
-		} else {
-			metric.Observe(sample.Value)
-		}
-	}
+	a.handleHistogram(sample, durationBuckets, "k6 trend")
 }
 
 func (a *PrometheusAdapter) handleTrendAsSummary(sample *metrics.Sample) {
@@ -187,7 +169,6 @@ func (a *PrometheusAdapter) handleTrendAsSummary(sample *metrics.Sample) {
 		}
 	}
 }
-
 
 func (a *PrometheusAdapter) handleTrend(sample *metrics.Sample) {
 	if gauge := a.getGauge(sample.Metric.Name+"_current", "k6 trend (current)", sample.Tags); gauge != nil {
@@ -363,6 +344,19 @@ func (a *PrometheusAdapter) getHistogram(
 	}
 
 	return histogram
+}
+
+func (a *PrometheusAdapter) handleHistogram(sample *metrics.Sample, durationBucket []float64, helpSuffix string) {
+	if histogram := a.getHistogram(sample.Metric.Name, helpSuffix, durationBucket, sample.Tags); histogram != nil {
+		labelValues := a.tagsToLabelValues(histogram.labelNames, sample.Tags)
+
+		metric, err := histogram.histogramVec.GetMetricWithLabelValues(labelValues...)
+		if err != nil {
+			a.logger.Error(err)
+		} else {
+			metric.Observe(sample.Value)
+		}
+	}
 }
 
 func helpFor(name string, helpSuffix string) string {
