@@ -102,6 +102,7 @@ k6 run -o 'prometheus=param1=value1&param2=value2' script.js
 | `subsystem` | [Prometheus subsystem](https://prometheus.io/docs/practices/naming/) for exported metrics     | `""` (empty)   |
 | `host`      | Hostname or IP address for HTTP endpoint (empty = listen on all interfaces)                   | `""` (all)     |
 | `port`      | TCP port for HTTP endpoint                                                                    | `5656`         |
+| `usehistogramfortime`      | Swaps the Prometheus metric type for time metrics to using Histograms instead of a summary.                                                                    | `"no"`(uses summary type)          |
 
 > [!TIP]
 > It's recommended to use `k6` as either `namespace` or `subsystem` to prefix metrics with `k6_`.
